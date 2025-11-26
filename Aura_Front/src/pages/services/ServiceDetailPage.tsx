@@ -1,13 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApi } from '@/hooks';
-import { ServiceService, TechnicianService } from '@/api';
+import { ServiceService, TechnicianService, TechnicianServiceLinkService } from '@/api';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { TechnicianCard } from '@/components/features/TechnicianCard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Wrench } from 'lucide-react';
+import { PaginatedResponse, Technician } from '@/types';
 
 export const ServiceDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -17,9 +18,77 @@ export const ServiceDetailPage: React.FC = () => {
     () => ServiceService.getById(Number(id))
   );
   
-  const { data: technicians, loading: loadingTechnicians, execute: fetchTechnicians } = useApi(
-    () => TechnicianService.getByService(Number(id))
-  );
+  const { data: technicians, loading: loadingTechnicians, execute: fetchTechnicians } = useApi<
+    PaginatedResponse<Technician>
+  >(async () => {
+    if (!id) {
+      return {
+        content: [],
+        totalElements: 0,
+        totalPages: 0,
+        size: 0,
+        number: 0,
+        first: true,
+        last: true
+      };
+    }
+
+    const normalizeTechnician = (technician: Technician): Technician => ({
+      ...technician,
+      specialties: technician.specialties ?? [],
+      description: technician.description ?? 'No description available.',
+      averageRating: Number(technician.averageRating ?? 0),
+      totalReviews: technician.totalReviews ?? 0,
+    });
+
+    try {
+      const response = await TechnicianService.getByService(Number(id));
+      const content = response.content?.map(normalizeTechnician) ?? [];
+      if (content.length > 0) {
+        return { ...response, content };
+      }
+    } catch (error) {
+      console.warn('Failed to load technicians directly, falling back to service links', error);
+    }
+
+    const serviceLinks = await TechnicianServiceLinkService.getByService(Number(id));
+
+    if (serviceLinks.length === 0) {
+      return {
+        content: [],
+        totalElements: 0,
+        totalPages: 0,
+        size: 0,
+        number: 0,
+        first: true,
+        last: true
+      };
+    }
+
+    const techniciansFromLinks = await Promise.all(
+      serviceLinks.map(async (link) => {
+        try {
+          const technician = await TechnicianService.getById(link.technicianId);
+          return normalizeTechnician(technician);
+        } catch (error) {
+          console.error('Could not load technician from link', link, error);
+          return null;
+        }
+      })
+    );
+
+    const content = techniciansFromLinks.filter(Boolean) as Technician[];
+
+    return {
+      content,
+      totalElements: content.length,
+      totalPages: 1,
+      size: content.length,
+      number: 0,
+      first: true,
+      last: true
+    };
+  });
   
   useEffect(() => {
     if (id) {
@@ -46,6 +115,8 @@ export const ServiceDetailPage: React.FC = () => {
       </div>
     );
   }
+
+  const formatPrice = (value: number | null | undefined) => Number(value ?? 0).toFixed(2);
   
   return (
     <div className="space-y-6">
@@ -75,7 +146,7 @@ export const ServiceDetailPage: React.FC = () => {
             <div className="text-right">
               <p className="text-sm text-muted-foreground">Starting at</p>
               <p className="text-3xl font-bold text-primary">
-                S/ {service.suggestedPrice.toFixed(2)}
+                S/ {formatPrice(service.suggestedPrice)}
               </p>
             </div>
           </div>
@@ -89,12 +160,12 @@ export const ServiceDetailPage: React.FC = () => {
           </div>
         </CardContent>
       </Card>
-      
+
       <div>
         <h2 className="text-2xl font-bold mb-4">Available Technicians</h2>
-        {technicians && technicians.length > 0 ? (
+        {technicians?.content && technicians.content.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {technicians.map((technician) => (
+            {technicians.content.map((technician) => (
               <TechnicianCard
                 key={technician.id}
                 technician={technician}

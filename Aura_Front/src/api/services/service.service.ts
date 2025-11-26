@@ -5,9 +5,25 @@ export class ServiceService {
   private static BASE = '/services';
   
   static async getAll(page = 0, size = 20): Promise<PaginatedResponse<Service>> {
-    return ApiClient.get<PaginatedResponse<Service>>(this.BASE, {
+    const response = await ApiClient.get<PaginatedResponse<Service> | Service[]>(this.BASE, {
       params: { page, size }
     });
+
+    // Backends may return either a paginated object or a plain array.
+    if (Array.isArray(response)) {
+      const content = response;
+      return {
+        content,
+        totalElements: content.length,
+        totalPages: 1,
+        size: content.length,
+        number: 0,
+        first: true,
+        last: true,
+      };
+    }
+
+    return response;
   }
   
   static async getById(id: number): Promise<Service> {

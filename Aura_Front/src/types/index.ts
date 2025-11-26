@@ -1,9 +1,9 @@
 // Enums
 export enum Role {
-  USER = 'ROLE_USER',
-  TECHNICIAN = 'ROLE_TECHNICIAN',
-  ADMIN = 'ROLE_ADMIN',
-  SUPERADMIN = 'ROLE_SUPERADMIN'
+  USER = 'USER',
+  TECHNICIAN = 'TECHNICIAN',
+  ADMIN = 'ADMIN',
+  SUPERADMIN = 'SUPERADMIN'
 }
 
 export enum ServiceCategory {
@@ -71,6 +71,7 @@ export interface Technician {
   firstName: string;
   lastName: string;
   email: string;
+  role?: Role.TECHNICIAN;
   phone: string;
   description: string;
   specialties: string[];
@@ -88,6 +89,7 @@ export interface Admin {
   lastName: string;
   email: string;
   role: Role;
+  phone?: string;
   createdAt: string;
 }
 
@@ -99,6 +101,15 @@ export interface Service {
   suggestedPrice: number;
   isActive: boolean;
   createdAt: string;
+}
+
+export interface TechnicianServiceLink {
+  technicianId: number;
+  technicianName: string;
+  serviceId: number;
+  serviceName: string;
+  baseRate: number;
+  totalReservations: number;
 }
 
 export interface Reservation {
@@ -187,8 +198,14 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   token: string;
-  refreshToken: string;
-  user: User | Technician | Admin;
+  type?: string;
+  refreshToken?: string;
+  userId: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: Role;
+  phone?: string;
 }
 
 export interface RegisterUserRequest {
@@ -197,11 +214,15 @@ export interface RegisterUserRequest {
   email: string;
   password: string;
   phone: string;
+  role: Role;
+  description?: string;
+  specialties?: string[];
 }
 
 export interface RegisterTechnicianRequest extends RegisterUserRequest {
   description: string;
   specialties: string[];
+  role: Role.TECHNICIAN;
 }
 
 export interface CreateReservationRequest {

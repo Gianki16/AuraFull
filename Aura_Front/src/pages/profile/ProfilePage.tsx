@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuth, useApi } from '@/hooks';
+import { useAuth } from '@/hooks';
 import { UserService } from '@/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,55 +13,63 @@ import { toast } from 'sonner';
 export const ProfilePage: React.FC = () => {
   const { user, setUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
-  
+  const [loading, setLoading] = useState(false);
+
   const [formData, setFormData] = useState({
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
   });
-  
-  const { loading, execute: updateProfile } = useApi(
-    (data: any) => UserService.update(user!.id, data)
-  );
-  
+
+  // Cargar datos del usuario cuando el componente monta
   useEffect(() => {
     if (user) {
       setFormData({
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        phone: user.phone,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        phone: user.phone || '',
       });
     }
   }, [user]);
-  
+
   const handleSave = async () => {
+    if (!user) return;
+
     try {
-      const updated = await updateProfile(formData);
+      setLoading(true);
+      const updated = await UserService.update(user.id, formData);
       setUser(updated);
       toast.success('Profile updated successfully');
       setIsEditing(false);
-    } catch (error) {
-      toast.error('Failed to update profile');
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      toast.error(error?.response?.data?.message || 'Failed to update profile');
+    } finally {
+      setLoading(false);
     }
   };
-  
+
   const handleCancel = () => {
-    setFormData({
-      firstName: user?.firstName || '',
-      lastName: user?.lastName || '',
-      email: user?.email || '',
-      phone: user?.phone || '',
-    });
+    if (user) {
+      setFormData({
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        phone: user.phone || '',
+      });
+    }
     setIsEditing(false);
   };
-  
+
   const getInitials = () => {
     if (!user) return 'U';
-    return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
+    const firstInitial = user.firstName?.[0] || '';
+    const lastInitial = user.lastName?.[0] || '';
+    return `${firstInitial}${lastInitial}`.toUpperCase() || 'U';
   };
-  
+
   if (!user) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -69,7 +77,7 @@ export const ProfilePage: React.FC = () => {
       </div>
     );
   }
-  
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
@@ -78,7 +86,7 @@ export const ProfilePage: React.FC = () => {
           Manage your account information
         </p>
       </div>
-      
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -106,24 +114,32 @@ export const ProfilePage: React.FC = () => {
                 <Button
                   size="sm"
                   onClick={handleSave}
-                  loading={loading}
                   disabled={loading}
                 >
-                  <Save className="h-4 w-4 mr-2" />
-                  Save
+                  {loading ? (
+                    <>
+                      <LoadingSpinner size="sm" className="mr-2" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Save
+                    </>
+                  )}
                 </Button>
               </div>
             )}
           </div>
         </CardHeader>
-        
+
         <CardContent className="space-y-6">
           <div className="flex justify-center">
             <Avatar className="h-24 w-24">
               <AvatarFallback className="text-2xl">{getInitials()}</AvatarFallback>
             </Avatar>
           </div>
-          
+
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="firstName">First Name</Label>
@@ -134,7 +150,7 @@ export const ProfilePage: React.FC = () => {
                 disabled={!isEditing}
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="lastName">Last Name</Label>
               <Input
@@ -145,7 +161,7 @@ export const ProfilePage: React.FC = () => {
               />
             </div>
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -156,7 +172,7 @@ export const ProfilePage: React.FC = () => {
               disabled={!isEditing}
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="phone">Phone</Label>
             <Input
@@ -167,11 +183,13 @@ export const ProfilePage: React.FC = () => {
               disabled={!isEditing}
             />
           </div>
-          
+
           <div className="pt-4 border-t">
             <div className="space-y-2">
               <Label>Account Type</Label>
-              <p className="text-sm text-muted-foreground">{user.role}</p>
+              <p className="text-sm text-muted-foreground">
+                {user.role}
+              </p>
             </div>
           </div>
         </CardContent>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useAuth, useApi } from '@/hooks';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
@@ -8,7 +8,7 @@ import { ReservationCard } from '@/components/features/ReservationCard';
 import { useNavigate } from 'react-router-dom';
 
 export const DashboardPage: React.FC = () => {
-  const { user, isUser } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const { data: reservations, loading: loadingReservations, execute: fetchReservations } = useApi(
@@ -24,28 +24,31 @@ export const DashboardPage: React.FC = () => {
     fetchServices();
   }, []);
 
+  const reservationsList = reservations?.content || [];
+  const servicesList = services?.content || [];
+
   const stats = [
     {
       title: 'Active Reservations',
-      value: reservations?.content.filter(r => r.status === 'CONFIRMED').length || 0,
+      value: reservationsList.filter(r => r.status === 'CONFIRMED').length,
       icon: Calendar,
       color: 'text-blue-500',
     },
     {
       title: 'Total Spent',
-      value: `S/ ${reservations?.content.reduce((acc, r) => acc + r.finalPrice, 0).toFixed(2) || '0.00'}`,
+      value: `S/ ${reservationsList.reduce((acc, r) => acc + (r.finalPrice || 0), 0).toFixed(2)}`,
       icon: DollarSign,
       color: 'text-green-500',
     },
     {
       title: 'Services Used',
-      value: new Set(reservations?.content.map(r => r.service.id)).size || 0,
+      value: new Set(reservationsList.map(r => r.service?.id).filter(Boolean)).size,
       icon: Wrench,
       color: 'text-purple-500',
     },
     {
       title: 'Reviews Given',
-      value: reservations?.content.filter(r => r.status === 'COMPLETED').length || 0,
+      value: reservationsList.filter(r => r.status === 'COMPLETED').length,
       icon: Star,
       color: 'text-yellow-500',
     },
@@ -93,12 +96,12 @@ export const DashboardPage: React.FC = () => {
             <CardTitle>Recent Reservations</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {reservations?.content.length === 0 ? (
+            {reservationsList.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">
                 No reservations yet. Book a service to get started!
               </p>
             ) : (
-              reservations?.content.slice(0, 3).map((reservation) => (
+              reservationsList.slice(0, 3).map((reservation) => (
                 <ReservationCard
                   key={reservation.id}
                   reservation={reservation}
@@ -116,7 +119,7 @@ export const DashboardPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="grid gap-3">
-              {(Array.isArray(services) ? services : services?.content || []).slice(0, 4).map((service) => (
+              {servicesList.slice(0, 4).map((service) => (
                 <div
                   key={service.id}
                   className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent cursor-pointer transition-colors"
@@ -128,10 +131,14 @@ export const DashboardPage: React.FC = () => {
                     </div>
                     <div>
                       <p className="font-medium">{service.name}</p>
-                      <p className="text-xs text-muted-foreground">{service.category}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {service.category?.replace('_', ' ') || 'General'}
+                      </p>
                     </div>
                   </div>
-                  <span className="font-semibold">S/ {service.suggestedPrice}</span>
+                  <span className="font-semibold">
+                    S/ {(service.suggestedPrice || 0).toFixed(2)}
+                  </span>
                 </div>
               ))}
             </div>

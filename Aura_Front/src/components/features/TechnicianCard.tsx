@@ -2,7 +2,7 @@ import { Technician } from '@/types';
 import { Card, CardContent, CardFooter, CardHeader } from '../ui/card';
 import { Button } from '../ui/button';
 import { Avatar, AvatarFallback } from '../ui/avatar';
-import { Star, MapPin, CheckCircle } from 'lucide-react';
+import { Star, CheckCircle } from 'lucide-react';
 import { Badge } from '../ui/badge';
 
 interface TechnicianCardProps {
@@ -10,13 +10,19 @@ interface TechnicianCardProps {
   onSelect: (technician: Technician) => void;
 }
 
-export const TechnicianCard: React.FC<TechnicianCardProps> = ({ 
-  technician, 
-  onSelect 
+export const TechnicianCard: React.FC<TechnicianCardProps> = ({
+  technician,
+  onSelect
 }) => {
+  const specialties = technician.specialties ?? [];
+
   const getInitials = () => {
-    return `${technician.firstName[0]}${technician.lastName[0]}`.toUpperCase();
+    const first = technician.firstName?.[0] || '';
+    const last = technician.lastName?.[0] || '';
+    return `${first}${last}`.toUpperCase() || 'T';
   };
+
+  const formatRating = (rating: number | null | undefined) => Number(rating ?? 0).toFixed(1);
   
   return (
     <Card className="hover:shadow-lg transition-shadow">
@@ -38,9 +44,9 @@ export const TechnicianCard: React.FC<TechnicianCardProps> = ({
             
             <div className="flex items-center gap-1 mt-1">
               <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-              <span className="font-medium">{technician.averageRating.toFixed(1)}</span>
+              <span className="font-medium">{formatRating(technician.averageRating)}</span>
               <span className="text-sm text-muted-foreground">
-                ({technician.totalReviews} reviews)
+                ({technician.totalReviews ?? 0} reviews)
               </span>
             </div>
           </div>
@@ -53,14 +59,14 @@ export const TechnicianCard: React.FC<TechnicianCardProps> = ({
         </p>
         
         <div className="flex flex-wrap gap-2">
-          {technician.specialties.slice(0, 3).map((specialty) => (
+          {specialties.slice(0, 3).map((specialty) => (
             <Badge key={specialty} variant="secondary">
               {specialty}
             </Badge>
           ))}
-          {technician.specialties.length > 3 && (
+          {specialties.length > 3 && (
             <Badge variant="outline">
-              +{technician.specialties.length - 3} more
+              +{specialties.length - 3} more
             </Badge>
           )}
         </div>

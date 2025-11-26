@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks';
+import { Role } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,7 +9,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
-import { Role } from '@/types';
 import { toast } from 'sonner';
 
 export const RegisterPage: React.FC = () => {
@@ -48,8 +48,7 @@ export const RegisterPage: React.FC = () => {
         email: userForm.email,
         password: userForm.password,
         phone: userForm.phone,
-        role: 'USER'
-      });
+      }, Role.USER);
       toast.success('Registration successful!');
       navigate('/dashboard');
     } catch (err) {
@@ -71,10 +70,9 @@ export const RegisterPage: React.FC = () => {
         email: technicianForm.email,
         password: technicianForm.password,
         phone: technicianForm.phone,
-        role: 'TECHNICIAN',
         description: technicianForm.description,
         specialties: technicianForm.specialties.split(',').map(s => s.trim())
-      });
+      }, Role.TECHNICIAN);
       toast.success('Registration successful!');
       navigate('/dashboard');
     } catch (err) {

@@ -1,5 +1,5 @@
 import { ApiClient } from '../axios.config';
-import { LoginRequest, LoginResponse, RegisterUserRequest, RegisterTechnicianRequest } from '../../types';
+import { LoginRequest, LoginResponse, RegisterUserRequest } from '../../types';
 
 export class AuthService {
   private static BASE = '/auth';
@@ -8,11 +8,7 @@ export class AuthService {
     return ApiClient.post<LoginResponse>(`${this.BASE}/login`, data);
   }
 
-  static async registerUser(data: RegisterUserRequest): Promise<LoginResponse> {
-    return ApiClient.post<LoginResponse>(`${this.BASE}/register`, data);
-  }
-
-  static async registerTechnician(data: RegisterTechnicianRequest): Promise<LoginResponse> {
+  static async register(data: RegisterUserRequest): Promise<LoginResponse> {
     return ApiClient.post<LoginResponse>(`${this.BASE}/register`, data);
   }
 

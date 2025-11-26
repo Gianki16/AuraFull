@@ -42,11 +42,17 @@ const removeStoredToken = (key: string): void => {
 let accessToken: string | null = getStoredToken(TOKEN_KEY);
 let refreshToken: string | null = getStoredToken(REFRESH_TOKEN_KEY);
 
-export const setTokens = (access: string, refresh: string): void => {
+export const setTokens = (access: string, refresh?: string | null): void => {
   accessToken = access;
-  refreshToken = refresh;
   setStoredToken(TOKEN_KEY, access);
-  setStoredToken(REFRESH_TOKEN_KEY, refresh);
+
+  if (refresh) {
+    refreshToken = refresh;
+    setStoredToken(REFRESH_TOKEN_KEY, refresh);
+  } else {
+    refreshToken = null;
+    removeStoredToken(REFRESH_TOKEN_KEY);
+  }
 };
 
 export const getAccessToken = (): string | null => accessToken;

@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import { DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
   Home, 
@@ -9,7 +10,8 @@ import {
   MessageSquare, 
   Settings,
   Users,
-  BarChart
+  BarChart,
+  User
 } from 'lucide-react';
 import { useAuth } from '@/hooks';
 import { Role } from '@/types';
@@ -23,65 +25,94 @@ interface NavItem {
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   roles?: Role[];
+  excludeRoles?: Role[];
 }
-
-const navItems: NavItem[] = [
-  {
-    title: 'Dashboard',
-    href: '/dashboard',
-    icon: Home,
-  },
-  {
-    title: 'Services',
-    href: '/services',
-    icon: Wrench,
-  },
-  {
-    title: 'Reservations',
-    href: '/reservations',
-    icon: Calendar,
-  },
-  {
-    title: 'Payments',
-    href: '/payments',
-    icon: CreditCard,
-  },
-  {
-    title: 'Reviews',
-    href: '/reviews',
-    icon: Star,
-  },
-  {
-    title: 'Support',
-    href: '/support',
-    icon: MessageSquare,
-  },
-  {
-    title: 'Technicians',
-    href: '/admin/technicians',
-    icon: Users,
-    roles: [Role.ADMIN, Role.SUPERADMIN],
-  },
-  {
-    title: 'Analytics',
-    href: '/admin/analytics',
-    icon: BarChart,
-    roles: [Role.ADMIN, Role.SUPERADMIN],
-  },
-  {
-    title: 'Settings',
-    href: '/settings',
-    icon: Settings,
-  },
-];
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
   const location = useLocation();
-  const { user, hasAnyRole } = useAuth();
+  const { user, hasAnyRole, isTechnician } = useAuth();
   
+  const navItems: NavItem[] = [
+    {
+      title: 'Dashboard',
+      href: '/dashboard',
+      icon: Home,
+    },
+    {
+      title: 'Services',
+      href: '/services',
+      icon: Wrench,
+      excludeRoles: [Role.TECHNICIAN],
+    },
+    {
+      title: isTechnician ? 'Job Requests' : 'My Reservations',
+      href: '/reservations',
+      icon: Calendar,
+    },
+    {
+      title: 'My Services',
+      href: '/my-services',
+      icon: Wrench,
+      roles: [Role.TECHNICIAN],
+    },
+    {
+      title: 'Payments',
+      href: '/payments',
+      icon: CreditCard,
+      excludeRoles: [Role.TECHNICIAN], // Técnicos no ven payments
+    },
+    {
+      title: 'Reviews',
+      href: '/reviews',
+      icon: Star,
+    },
+    {
+    title: 'Earnings',
+    href: '/earnings',
+    icon: DollarSign,
+    roles: [Role.TECHNICIAN],
+    },
+    {
+      title: 'Support',
+      href: '/support',
+      icon: MessageSquare,
+    },
+    {
+      title: 'Profile',
+      href: '/profile',
+      icon: User,
+    },
+    {
+      title: 'Technicians',
+      href: '/admin/technicians',
+      icon: Users,
+      roles: [Role.ADMIN, Role.SUPERADMIN],
+    },
+    {
+      title: 'Analytics',
+      href: '/admin/analytics',
+      icon: BarChart,
+      roles: [Role.ADMIN, Role.SUPERADMIN],
+    },
+    {
+      title: 'Settings',
+      href: '/settings',
+      icon: Settings,
+    },
+  ];
+
   const filteredNavItems = navItems.filter(item => {
-    if (!item.roles) return true;
-    return hasAnyRole(item.roles);
+    // Excluir si está en excludeRoles
+    if (item.excludeRoles && user?.role && item.excludeRoles.includes(user.role as Role)) {
+      return false;
+    }
+    
+    // Si tiene roles específicos, verificar
+    if (item.roles && item.roles.length > 0) {
+      return hasAnyRole(item.roles);
+    }
+    
+    return true;
   });
   
   return (
@@ -117,9 +148,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
         
         <div className="border-t pt-4">
           <div className="rounded-lg bg-muted p-3">
-            <p className="text-xs font-medium">Need Help?</p>
+            <p className="text-xs font-medium">
+              {isTechnician ? 'Professional Support' : 'Need Help?'}
+            </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Contact our support team 24/7
+              {isTechnician 
+                ? 'Get assistance with your jobs'
+                : 'Contact our support team 24/7'
+              }
             </p>
             <Link
               to="/support"
